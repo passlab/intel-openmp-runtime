@@ -152,6 +152,16 @@
     #define FTN_TARGET_ASSOCIATE_PTR             omp_target_associate_ptr
     #define FTN_TARGET_DISASSOCIATE_PTR          omp_target_disassociate_ptr
 # endif
+
+    #define FTN_SET_WAIT_POLICY                  omp_set_wait_policy
+    #define FTN_GET_WAIT_POLICY                  omp_get_wait_policy
+    #define FTN_QUIESCE                          omp_quiesce
+    #define FTN_THREAD_CREATE                    omp_thread_create
+    #define FTN_THREAD_EXIT                      omp_thread_exit
+    #define FTN_THREAD_JOIN                      omp_thread_join
+    #define FTN_THREAD_ATTACH                    omp_thread_attach
+    #define FTN_GET_RUNTIME_HANDLE               omp_get_runtime_handle
+
 #endif
 
 #endif /* KMP_FTN_PLAIN */
@@ -271,6 +281,16 @@
     #define FTN_TARGET_ASSOCIATE_PTR             omp_target_associate_ptr_
     #define FTN_TARGET_DISASSOCIATE_PTR          omp_target_disassociate_ptr_
 # endif
+
+    #define FTN_SET_WAIT_POLICY                  omp_set_wait_policy_
+    #define FTN_GET_WAIT_POLICY                  omp_get_wait_policy_
+    #define FTN_QUIESCE                          omp_quiesce_
+    #define FTN_THREAD_CREATE                    omp_thread_create_
+    #define FTN_THREAD_EXIT                      omp_thread_exit_
+    #define FTN_THREAD_JOIN                      omp_thread_join_
+    #define FTN_THREAD_ATTACH                    omp_thread_attach_
+    #define FTN_GET_RUNTIME_HANDLE               omp_get_runtime_handle_
+
 #endif
 
 #endif /* KMP_FTN_APPEND */
@@ -390,6 +410,16 @@
     #define FTN_TARGET_ASSOCIATE_PTR             OMP_TARGET_ASSOCIATE_PTR
     #define FTN_TARGET_DISASSOCIATE_PTR          OMP_TARGET_DISASSOCIATE_PTR
 # endif
+
+    #define FTN_SET_WAIT_POLICY                  FTN_SET_WAIT_POLICY
+    #define FTN_GET_WAIT_POLICY                  FTN_GET_WAIT_POLICY
+    #define FTN_QUIESCE                          FTN_QUIESCE
+    #define FTN_THREAD_CREATE                    FTN_THREAD_CREATE
+    #define FTN_THREAD_EXIT                      FTN_THREAD_EXIT
+    #define FTN_THREAD_JOIN                      FTN_THREAD_JOIN
+    #define FTN_THREAD_ATTACH                    FTN_THREAD_ATTACH
+    #define FTN_GET_RUNTIME_HANDLE               FTN_GET_RUNTIME_HANDLE
+
 #endif
 
 #endif /* KMP_FTN_UPPER */
@@ -509,6 +539,15 @@
     #define FTN_TARGET_ASSOCIATE_PTR             OMP_TARGET_ASSOCIATE_PTR_
     #define FTN_TARGET_DISASSOCIATE_PTR          OMP_TARGET_DISASSOCIATE_PTR_
 # endif
+
+    #define FTN_SET_WAIT_POLICY                  FTN_SET_WAIT_POLICY_
+    #define FTN_GET_WAIT_POLICY                  FTN_GET_WAIT_POLICY_
+    #define FTN_QUIESCE                          FTN_QUIESCE_
+    #define FTN_THREAD_CREATE                    FTN_THREAD_CREATE_
+    #define FTN_THREAD_EXIT                      FTN_THREAD_EXIT_
+    #define FTN_THREAD_JOIN                      FTN_THREAD_JOIN_
+    #define FTN_THREAD_ATTACH                    FTN_THREAD_ATTACH_
+    #define FTN_GET_RUNTIME_HANDLE               FTN_GET_RUNTIME_HANDLE_
 #endif
 
 #endif /* KMP_FTN_UAPPEND */

@@ -843,6 +843,57 @@ FTN_GET_PARTITION_PLACE_NUMS( int *place_nums ) {
         }
     #endif
 }
+
+/** OpenMP Interoperability */
+void * FTN_STDCALL
+FTN_SET_WAIT_POLICY(omp_wait_policy_t wait_policy)
+{
+    return 0;
+}
+
+int FTN_STDCALL
+FTN_GET_WAIT_POLICY( void )
+{
+    return OMP_ACTIVE_WAIT;
+}
+
+int FTN_STDCALL
+FTN_QUIESCE( void )
+{
+    printf("runtime quiesce call\n");
+    return 0;
+}
+
+int FTN_STDCALL
+FTN_THREAD_CREATE( omp_thread_t * th, void *(*start_routine)(void *), void *arg, void * new_stack )
+{
+    return 0;
+}
+
+void FTN_STDCALL
+FTN_THREAD_EXIT( void * value_ptr )
+{
+    return;
+}
+
+int FTN_STDCALL
+FTN_THREAD_JOIN( omp_thread_t thread, void **value_ptr )
+{
+    return 0;
+}
+
+int FTN_STDCALL
+FTN_THREAD_ATTACH( void * new_stack, int * callback_flag )
+{
+    return 0;
+}
+
+omp_runtime_handle_t FTN_STDCALL
+FTN_GET_RUNTIME_HANDLE( void )
+{
+    return 0;
+}
+
 #endif
 
 int FTN_STDCALL

@@ -542,6 +542,17 @@ kmp_set_warnings_off                        780
         omp_target_associate_ptr            888
         omp_target_disassociate_ptr         889
     %endif
+
+    # OpenMP interoperability support
+    omp_set_wait_policy                    900
+    omp_get_wait_policy                    901
+    omp_quiesce                            902
+    omp_thread_create                      903
+    omp_thread_exit                        904
+    omp_thread_join                        905
+    omp_thread_attach                      906
+    omp_get_runtime_handle                 907
+
 %endif # OMP_45
 
 kmp_set_disp_num_buffers                    890

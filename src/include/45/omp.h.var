@@ -200,6 +200,22 @@
     extern void   __KAI_KMPC_CONVENTION  kmp_set_warnings_on(void);
     extern void   __KAI_KMPC_CONVENTION  kmp_set_warnings_off(void);
 
+    /* interop API */
+    typedef enum omp_wait_policy_t {
+        OMP_ACTIVE_WAIT = 1,
+        OMP_PASSIVE_WAIT = 2,
+    } omp_wait_policy_t;
+    extern void   __KAI_KMPC_CONVENTION  omp_set_wait_policy(omp_wait_policy_t wait_policy);
+    extern int    __KAI_KMPC_CONVENTION  omp_get_wait_policy(void);
+    extern int    __KAI_KMPC_CONVENTION  omp_quiesce(void);
+    typedef struct omp_thread omp_thread_t;
+    extern int    __KAI_KMPC_CONVENTION  omp_thread_create (omp_thread_t * th, void *(*start_routine)(void *), void *arg, void * new_stack);
+    extern void   __KAI_KMPC_CONVENTION  omp_thread_exit(void *value_ptr);
+    extern int    __KAI_KMPC_CONVENTION  omp_thread_join(omp_thread_t thread, void **value_ptr);
+    extern int    __KAI_KMPC_CONVENTION  omp_thread_attach(void * new_stack, int * callback_flag);
+    typedef struct omp_runtime_handle * omp_runtime_handle_t;
+    extern omp_runtime_handle_t    __KAI_KMPC_CONVENTION  omp_get_runtime_handle(void);
+
 #   undef __KAI_KMPC_CONVENTION
 
     /* Warning:

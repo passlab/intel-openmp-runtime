@@ -3638,6 +3638,20 @@ typedef enum omp_sched_t {
     omp_sched_auto    = 4
 } omp_sched_t;
 typedef void * kmp_affinity_mask_t;
+
+typedef enum omp_wait_policy_t {
+    OMP_ACTIVE_WAIT = 1,
+    OMP_PASSIVE_WAIT = 2,
+} omp_wait_policy_t;
+
+typedef struct omp_thread {
+    int dummy;
+} omp_thread_t;
+
+typedef struct omp_runtime_handle {
+    int dummy;
+} * omp_runtime_handle_t;
+
 #endif
 
 KMP_EXPORT void KMPC_CONVENTION ompc_set_max_active_levels(int);
