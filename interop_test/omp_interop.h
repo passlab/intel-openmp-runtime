@@ -1,5 +1,8 @@
 //
 // Created by Yonghong Yan on 4/29/16.
+// 
+// You do NOT need to include this header if you are using the interop implementation on Intel OpenMP runtime
+// since it is already part of the omp.h
 //
 #ifndef __LIBOMP_OMP_INTEROP_H__
 #define __LIBOMP_OMP_INTEROP_H__

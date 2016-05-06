@@ -5,7 +5,6 @@
 #include <pthread.h>
 #include <signal.h>
 #include <omp.h>
-#include <omp_interop.h>
 #include <sys/timeb.h>
 #include <unistd.h>
 
@@ -21,8 +20,8 @@
  */
 
 int main(int argc, char * argv[]) {
-	int thr_num = 4;
-	if (argc >= 2) thr_num = (atoi(argv[1]));
+	int nthreads = 4;
+	if (argc >= 2) nthreads = (atoi(argv[1]));
 #pragma omp parallel num_threads(nthreads)
     {
         int tid = omp_get_thread_num();
@@ -31,6 +30,7 @@ int main(int argc, char * argv[]) {
     if (omp_quiesce() == 0) {
         printf("omp_quiesce() return successfully\n");
     };
+
 #pragma omp parallel num_threads(nthreads)
     {
         int tid = omp_get_thread_num();

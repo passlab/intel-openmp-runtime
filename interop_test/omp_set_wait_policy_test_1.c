@@ -29,7 +29,7 @@ int main(int argc, char * argv[]) {
 
     omp_set_wait_policy(OMP_ACTIVE_WAIT);
 
-    if (omp_get_wait_policy() == OMP_ACTIVE_WAIT) {
+    if (omp_get_wait_policy() != OMP_ACTIVE_WAIT) {
         printf("WAIT policy is not correctly set\n");
     }
 #pragma omp parallel num_threads(nthreads)
