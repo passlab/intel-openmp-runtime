@@ -2475,6 +2475,7 @@ typedef struct KMP_ALIGN_CACHE kmp_base_info {
 #if KMP_STATS_ENABLED
     kmp_stats_list* th_stats;
 #endif
+    void * interop_thr;
 } kmp_base_info_t;
 
 typedef union KMP_ALIGN_CACHE kmp_info {
@@ -3645,7 +3646,8 @@ typedef enum omp_wait_policy_t {
 } omp_wait_policy_t;
 
 typedef struct omp_thread {
-    int dummy;
+    volatile int join_counter;
+    void * rtval;
 } omp_thread_t;
 
 typedef struct omp_runtime_handle {
