@@ -3646,6 +3646,9 @@ typedef enum omp_wait_policy_t {
 } omp_wait_policy_t;
 
 typedef struct omp_thread {
+    void *(*start_routine)(void *);
+    void *arg;
+    void * new_stack;
     volatile int join_counter;
     void * rtval;
 } omp_thread_t;

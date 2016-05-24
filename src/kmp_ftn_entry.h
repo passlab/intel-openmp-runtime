@@ -885,7 +885,6 @@ FTN_SET_WAIT_POLICY(omp_wait_policy_t wait_policy)
         // bool rr = __kmp_threads[1]->th.th_root->r.r_active;
         // printf("thread 1 is %d\n", rr);
     }
-    return 0;
 }
 
 int FTN_STDCALL
@@ -928,9 +927,19 @@ FTN_QUIESCE( void )
     return 0;
 }
 
+void static interop_kmp_omp_thread_launcher(int gtid) {
+    omp_thread_t * th = (omp_thread_t*) __kmp_threads[gtid]->th.interop_thr;
+    if (th->new_stack) {
+        /* use setjmp/longjmp pair to change stack */
+    }
+    th->start_routine(th->arg);
+}
+
 int FTN_STDCALL
 FTN_THREAD_CREATE( omp_thread_t * th, void *(*start_routine)(void *), void *arg, void * new_stack )
 {
+#if 0
+
     // kmp_team_t team = __kmp_allocate_team2();
     // kmpc_micro microtask;
     // (*void)microtask=1;
@@ -966,14 +975,57 @@ FTN_THREAD_CREATE( omp_thread_t * th, void *(*start_routine)(void *), void *arg,
     // status = pthread_join( thr->th.th_info.ds.ds_thread, & exit_val);
 
     // printf("if para %d\n", par);
-    __kmp_join_call(NULL, idd, 1);
+    //__kmp_join_call(NULL, idd, 1);
 
     // __kmp_reap_worker(thr);
 
     // __kmp_free_thread(thr);
     // __kmp_reap_worker( thr );
+    //th->join_counter = 1;
+
+#endif
+
+    th->start_routine = start_routine;
+    th->arg = arg;
+    th->new_stack = new_stack;
     th->join_counter = 1;
-    
+
+    int gtid = __kmp_get_gtid();
+    kmp_info_t * current_thr = __kmp_threads[ gtid ];
+    kmp_root_t *root          = current_thr->th.th_root;
+
+    kmp_team_t * team = __kmp_allocate_team(root, 1, 1,
+    #if OMPT_SUPPORT
+                                                0,
+    #endif
+    #if OMP_40_ENABLED
+                                                current_thr->th.th_current_task->td_icvs.proc_bind,
+    #endif
+                          & current_thr->th.th_current_task->td_icvs,
+                       0 USE_NESTED_HOT_ARG(NULL) );
+
+    team->t.t_master_tid = 0;
+    KMP_CHECK_UPDATE(team->t.t_master_this_cons, current_thr->th.th_local.this_construct);
+    KMP_CHECK_UPDATE(team->t.t_ident, current_thr->th.th_ident);
+    KMP_CHECK_UPDATE(team->t.t_parent, current_thr->th.th_team);
+    KMP_CHECK_UPDATE_SYNC(team->t.t_pkfn, NULL);
+    team->t.t_invoke = VOLATILE_CAST(launch_t) interop_kmp_omp_thread_launcher;
+
+    //* check the fork_team_threads call
+    kmp_info_t * kmp_thread = __kmp_allocate_thread(root, team, 0);
+    kmp_thread->th.interop_thr = th;
+    kmp_thread->th.th_info.ds.ds_tid  = 0;
+    kmp_thread->th.th_team            = team;
+    kmp_thread->th.th_team_nproc      = team->t.t_nproc;
+    kmp_thread->th.th_team_master     = kmp_thread;
+//    kmp_thread->th.th_team_serialized = FALSE;
+
+    /* internal fork so the thread is running for the user program */
+    //__kmp_internal_fork(current_thr->th.th_ident, __kmp_get_gtid(), team);
+
+
+
+
     return 0;
 }
 
@@ -983,7 +1035,7 @@ FTN_THREAD_EXIT( void * value_ptr )
     // __kmp_free_team( kmp_root_t *root, kmp_team_t *team  USE_NESTED_HOT_ARG(kmp_info_t *master) );
     int idd = __kmp_get_global_thread_id();
 
-    omp_thread_t * thr = __kmp_threads[idd]->th.interop_thr;
+    omp_thread_t * thr = (omp_thread_t*)__kmp_threads[idd]->th.interop_thr;
     thr->rtval = value_ptr;
     thr->join_counter = 1;
     return;
