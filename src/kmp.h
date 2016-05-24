@@ -3657,6 +3657,7 @@ typedef struct omp_runtime_handle {
     int dummy;
 } * omp_runtime_handle_t;
 
+extern int __kmp_omp_thread_create( omp_thread_t * th, void *(*start_routine)(void *), void *arg, void * new_stack );
 #endif
 
 KMP_EXPORT void KMPC_CONVENTION ompc_set_max_active_levels(int);

@@ -208,10 +208,16 @@
     extern void   __KAI_KMPC_CONVENTION  omp_set_wait_policy(omp_wait_policy_t wait_policy);
     extern int    __KAI_KMPC_CONVENTION  omp_get_wait_policy(void);
     extern int    __KAI_KMPC_CONVENTION  omp_quiesce(void);
-    typedef struct omp_thread omp_thread_t;
+    typedef struct omp_thread {
+        void *(*start_routine)(void *);
+        void *arg;
+        void * new_stack;
+        volatile int join_counter;
+        void * rtval;
+    } omp_thread_t;
     extern int    __KAI_KMPC_CONVENTION  omp_thread_create (omp_thread_t * th, void *(*start_routine)(void *), void *arg, void * new_stack);
     extern void   __KAI_KMPC_CONVENTION  omp_thread_exit(void *value_ptr);
-    extern int    __KAI_KMPC_CONVENTION  omp_thread_join(omp_thread_t thread, void **value_ptr);
+    extern int    __KAI_KMPC_CONVENTION  omp_thread_join(omp_thread_t * thread, void **value_ptr);
     extern int    __KAI_KMPC_CONVENTION  omp_thread_attach(void * new_stack, int * callback_flag);
     typedef struct omp_runtime_handle * omp_runtime_handle_t;
     extern omp_runtime_handle_t    __KAI_KMPC_CONVENTION  omp_get_runtime_handle(void);

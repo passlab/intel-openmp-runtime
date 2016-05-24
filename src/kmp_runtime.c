@@ -3977,6 +3977,8 @@ __kmp_initialize_info( kmp_info_t *this_thr, kmp_team_t *team, int tid, int gtid
     KMP_DEBUG_ASSERT( master );
     KMP_DEBUG_ASSERT( master->th.th_root );
 
+    this_thr->th.interop_thr = NULL;
+
     KMP_MB();
 
     TCW_SYNC_PTR(this_thr->th.th_team, team);
@@ -5435,6 +5437,7 @@ __kmp_launch_thread( kmp_info_t *this_thr )
 
         /* No tid yet since not part of a team */
         __kmp_fork_barrier( gtid, KMP_GTID_DNE );
+        omp_thread_t * th = (omp_thread_t*)this_thr->th.interop_thr;
 
 #if OMPT_SUPPORT
         if (ompt_enabled) {
@@ -5486,7 +5489,10 @@ __kmp_launch_thread( kmp_info_t *this_thr )
                               gtid, (*pteam)->t.t_id, __kmp_tid_from_gtid(gtid), (*pteam)->t.t_pkfn));
             }
             /* join barrier after parallel region */
-            __kmp_join_barrier( gtid );
+            if (th == NULL) {
+                __kmp_join_barrier(gtid);
+            } else { /* omp_thread_create hack so we do not need a join barrier */
+            }
         }
     }
     TCR_SYNC_PTR((intptr_t)__kmp_global.g.g_done);
@@ -7600,6 +7606,173 @@ __kmp_determine_reduction_method( ident_t *loc, kmp_int32 global_tid,
 kmp_int32
 __kmp_get_reduce_method( void ) {
     return ( ( __kmp_entry_thread()->th.th_local.packed_reduction_method ) >> 8 );
+}
+
+
+void static interop_kmp_omp_thread_launcher(int gtid) {
+    kmp_info_t * kmp_thread = __kmp_threads[gtid];
+    omp_thread_t * th = (omp_thread_t*) kmp_thread->th.interop_thr;
+    if (th->new_stack) {
+        /* use setjmp/longjmp pair to change stack */
+    }
+    th->start_routine(th->arg);
+    th->join_counter = 1;
+
+    /* the free team will not free the original master thread, it will return the team and the thread back to the pool */
+    kmp_team_t * team = kmp_thread->th.th_team;
+    __kmp_free_team(kmp_thread->th.th_root, team, NULL);
+}
+
+int __kmp_omp_thread_create( omp_thread_t * th, void *(*start_routine)(void *), void *arg, void * new_stack )
+{
+    KA_TRACE( 20, ("__kmp_omp_thread_create entered\n") );
+    th->start_routine = start_routine;
+    th->arg = arg;
+    th->new_stack = new_stack;
+    th->join_counter = 0;
+
+    int gtid = __kmp_get_gtid();
+    kmp_info_t * current_thr = __kmp_threads[ gtid ];
+    kmp_team_t * current_team = current_thr->th.th_team;
+    int current_tid = current_thr->th.th_info.ds.ds_tid;
+
+    kmp_root_t *root          = current_thr->th.th_root;
+
+    /* we call this function with 1 as team size so it will allocate team from either team pool or new allocation, and
+     * it will not use hot team which will automatically allocate kmp_info_t and thread for it */
+    kmp_team_t * team = __kmp_allocate_team(root, 1, 2,
+#if OMPT_SUPPORT
+            0,
+#endif
+#if OMP_40_ENABLED
+                                            current_thr->th.th_current_task->td_icvs.proc_bind,
+#endif
+                                            & current_thr->th.th_current_task->td_icvs,
+                                            0 USE_NESTED_HOT_ARG(NULL) );
+    team->t.t_master_tid = 0;
+    team->t.t_nproc = 2; /* change it to 2 threads in the team */
+    team->t.t_threads[0] = current_thr; //* to bypass a segfault problem in kmp_allocate_thread call to __kmp_get_x_global_icvs
+    KMP_CHECK_UPDATE(team->t.t_master_this_cons, current_thr->th.th_local.this_construct);
+    KMP_CHECK_UPDATE(team->t.t_ident, current_thr->th.th_ident);
+    KMP_CHECK_UPDATE(team->t.t_parent, current_thr->th.th_team);
+    team->t.t_pkfn = (microtask_t)1234;
+    team->t.t_invoke = VOLATILE_CAST(launch_t) interop_kmp_omp_thread_launcher;
+
+    /* grab a thread from thread pool or create a new one */
+    kmp_info_t * kmp_thread = __kmp_allocate_thread(root, team, 1);
+    kmp_thread->th.interop_thr = th;
+    __kmp_initialize_info(current_thr, team, 0, gtid);
+    team->t.t_threads[1] = kmp_thread;
+
+   // int new_gtid = __kmp_gtid_from_thread(kmp_thread);
+
+    __kmp_fork_barrier(gtid, 0);
+
+    /* restore back the current thread to its original team (horibble hack) */
+    __kmp_initialize_info(current_thr, current_team, current_tid, gtid); /* or put myself back to the thread pool */
+
+    return 0;
+}
+
+int __kmp_omp_thread_attach( void * new_stack, int * callback_flag ) {
+    /* we should first do initial check to see whether the runtime is on or not */
+    int new_gtid;
+    kmp_info_t * new_thr;
+    for( new_gtid=1 ; TCR_PTR(__kmp_threads[new_gtid]) != NULL; ++new_gtid ) {
+        KMP_DEBUG_ASSERT( new_gtid < __kmp_threads_capacity );
+    }
+
+    /* allocate space for it. */
+    new_thr = (kmp_info_t*) __kmp_allocate( sizeof(kmp_info_t) );
+
+    TCW_SYNC_PTR(__kmp_threads[new_gtid], new_thr);
+
+    if ( __kmp_storage_map ) {
+        __kmp_print_thread_storage_map( new_thr, new_gtid );
+    }
+
+    /* add the reserve serialized team, initialized from the team's master thread */
+        new_thr->th.th_serial_team = NULL;
+
+#if USE_FAST_MEMORY
+    __kmp_initialize_fast_memory( new_thr );
+#endif /* USE_FAST_MEMORY */
+
+#if KMP_USE_BGET
+    KMP_DEBUG_ASSERT( new_thr->th.th_local.bget_data == NULL );
+    __kmp_initialize_bget( new_thr );
+#endif
+
+    __kmp_init_random( new_thr );  // Initialize random number generator
+
+    /* Initialize these only once when thread is grabbed for a team allocation */
+    KA_TRACE( 20, ("__kmp_allocate_thread: T#%d init go fork=%u, plain=%u\n",
+            __kmp_get_gtid(), KMP_INIT_BARRIER_STATE, KMP_INIT_BARRIER_STATE ));
+
+    int b;
+    kmp_balign_t * balign = new_thr->th.th_bar;
+    for(b=0; b<bs_last_barrier; ++b) {
+        balign[b].bb.b_go = KMP_INIT_BARRIER_STATE;
+        balign[b].bb.team = NULL;
+        balign[b].bb.wait_flag = KMP_BARRIER_NOT_WAITING;
+        balign[b].bb.use_oncore_barrier = 0;
+    }
+
+    new_thr->th.th_spin_here = FALSE;
+    new_thr->th.th_next_waiting = 0;
+
+#if OMP_40_ENABLED && KMP_AFFINITY_SUPPORTED
+    new_thr->th.th_current_place = KMP_PLACE_UNDEFINED;
+    new_thr->th.th_new_place = KMP_PLACE_UNDEFINED;
+    new_thr->th.th_first_place = KMP_PLACE_UNDEFINED;
+    new_thr->th.th_last_place = KMP_PLACE_UNDEFINED;
+#endif
+
+    TCW_4(new_thr->th.th_in_pool, FALSE);
+    new_thr->th.th_active_in_pool = FALSE;
+    TCW_4(new_thr->th.th_active, TRUE);
+
+    /* adjust the global counters */
+    __kmp_all_nth ++;
+    __kmp_nth ++;
+
+    //
+    // if __kmp_adjust_gtid_mode is set, then we use method #1 (sp search)
+    // for low numbers of procs, and method #2 (keyed API call) for higher
+    // numbers of procs.
+    //
+    if ( __kmp_adjust_gtid_mode ) {
+        if ( __kmp_all_nth >= __kmp_tls_gtid_min ) {
+            if ( TCR_4(__kmp_gtid_mode) != 2) {
+                TCW_4(__kmp_gtid_mode, 2);
+            }
+        }
+        else {
+            if (TCR_4(__kmp_gtid_mode) != 1 ) {
+                TCW_4(__kmp_gtid_mode, 1);
+            }
+        }
+    }
+
+#ifdef KMP_ADJUST_BLOCKTIME
+    /* Adjust blocktime back to zero if necessary       */
+    /* Middle initialization might not have occurred yet */
+    if ( !__kmp_env_blocktime && ( __kmp_avail_proc > 0 ) ) {
+        if ( __kmp_nth > __kmp_avail_proc ) {
+            __kmp_zero_bt = TRUE;
+        }
+    }
+#endif /* KMP_ADJUST_BLOCKTIME */
+
+    /* actually fork it and create the new worker thread */
+    KF_TRACE( 10, ("__kmp_allocate_thread: before __kmp_create_worker: %p\n", new_thr ));
+    __kmp_create_worker( new_gtid, new_thr, __kmp_stksize );
+    KF_TRACE( 10, ("__kmp_allocate_thread: after __kmp_create_worker: %p\n", new_thr ));
+
+    KA_TRACE( 20, ("__kmp_allocate_thread: T#%d forked T#%d\n", __kmp_get_gtid(), new_gtid ));
+    KMP_MB();
+    return new_thr;
+
 }
 
 /* ------------------------------------------------------------------------ */
