@@ -22,7 +22,7 @@ void *test_fun(void *arg){
 }
 
 void *test_func_2(void *arg) {
-    printf("omp_thread: %d\n", (int)arg);
+    printf("omp_thread: %d\n", *((int*)arg));
     omp_thread_exit(arg);
 }
 
