@@ -885,7 +885,6 @@ FTN_SET_WAIT_POLICY(omp_wait_policy_t wait_policy)
         // bool rr = __kmp_threads[1]->th.th_root->r.r_active;
         // printf("thread 1 is %d\n", rr);
     }
-    return 0;
 }
 
 int FTN_STDCALL
@@ -931,50 +930,7 @@ FTN_QUIESCE( void )
 int FTN_STDCALL
 FTN_THREAD_CREATE( omp_thread_t * th, void *(*start_routine)(void *), void *arg, void * new_stack )
 {
-    // kmp_team_t team = __kmp_allocate_team2();
-    // kmpc_micro microtask;
-    // (*void)microtask=1;
-    // (void)i = 1;
-    // int a = 1, b=1;
-    // int * ggtid=&a;
-    // int * npr=&b;
-    // int microtask;
-    // microtask = (int)__kmp_GOMP_microtask_wrapper(ggtid, npr, fun, arg);
-    // __kmpc_fork_teams(NULL, 2, NULL, 10);
-
-    th->join_counter = 0;
-    int idd = __kmp_register_root(false);
-    printf("register %d\n", idd);
-    microtask_t microtask = NULL;
-    int a = 100;
-    // microtask = &a;
-    kmp_info_t *thr = __kmp_threads[idd];
-    thr->th.th_set_nproc = 1;
-    thr->th.th_teams_microtask = microtask;
-    thr->th.interop_thr = th;
-    va_list ap;
-    va_start(ap, arg);
-
-    int par = __kmp_fork_call( NULL, idd, fork_context_intel,
-                               2, // num of parameters
-            // #if OMPT_SUPPORT
-            // (void *)fun, // "unwrap"
-            // #endif
-                               VOLATILE_CAST(microtask_t)start_routine, // wrap
-                               VOLATILE_CAST(launch_t) __kmp_invoke_task_func,
-                               &ap );
-    // status = pthread_join( thr->th.th_info.ds.ds_thread, & exit_val);
-
-    // printf("if para %d\n", par);
-    __kmp_join_call(NULL, idd, 1);
-
-    // __kmp_reap_worker(thr);
-
-    // __kmp_free_thread(thr);
-    // __kmp_reap_worker( thr );
-    th->join_counter = 1;
-    
-    return 0;
+    return __kmp_omp_thread_create(th, start_routine, arg, new_stack);
 }
 
 void FTN_STDCALL
@@ -983,7 +939,7 @@ FTN_THREAD_EXIT( void * value_ptr )
     // __kmp_free_team( kmp_root_t *root, kmp_team_t *team  USE_NESTED_HOT_ARG(kmp_info_t *master) );
     int idd = __kmp_get_global_thread_id();
 
-    omp_thread_t * thr = __kmp_threads[idd]->th.interop_thr;
+    omp_thread_t * thr = (omp_thread_t*)__kmp_threads[idd]->th.interop_thr;
     thr->rtval = value_ptr;
     thr->join_counter = 1;
     return;

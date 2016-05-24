@@ -22,7 +22,7 @@ void *test_fun(void *arg){
 }
 
 void *test_func_2(void *arg) {
-    printf("omp_thread: %d\n", *((int*)arg));
+    printf("omp_thread: %d\n", (int)arg);
     omp_thread_exit(arg);
 }
 
@@ -39,9 +39,9 @@ int main(int argc, char * argv[])
 
     // omp_set_nested();
     // create 50 threads and put them into threadpool
-    #pragma omp parallel private(tid) num_threads(50)
+    #pragma omp parallel private(tid) num_threads(2)
     {
-        tid = omp_get_thread_num(); 
+        int tid = omp_get_thread_num();
     }
 
     int retval;
@@ -55,6 +55,7 @@ int main(int argc, char * argv[])
     omp_thread_join(&ompthread_0, (void**)(&ret_value));
     printf("omp_thread 0 return: %d\n", *ret_value);
 
+//    while(1);
     omp_thread_t ompthread_1;
     void * stack = malloc(4098);
     arg=1;
@@ -63,7 +64,6 @@ int main(int argc, char * argv[])
     printf("omp_thread 1 return: %d\n", *ret_value);
 
     omp_thread_t ompthread_2;
-    stack = malloc(4098);
     arg=2;
     omp_thread_create(&ompthread_2, test_fun, (void*)(&arg), stack);
     omp_thread_join(&ompthread_2, (void**)(&ret_value));
