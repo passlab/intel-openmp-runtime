@@ -5,7 +5,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <omp.h>
-#include <omp_interop.h>
+//#include <omp_interop.h>
 #include <sys/timeb.h>
 #include <unistd.h>
 void *omp_parallel_foo(void *ptr);
@@ -37,7 +37,7 @@ int main(int argc, char * argv[]) {
 }
 
 /**
- * TODO: how to make sure the an empty parallel do not get optimized out by the compiler
+ * TODO: how to make sure that an empty parallel do not get optimized out by the compiler
  */
 void omp_quiesce_overhead(int nthreads) {
     int i;
@@ -58,7 +58,7 @@ void omp_quiesce_overhead(int nthreads) {
 		quiesce_ov += read_timer() - temp2;
         //quiesce_start_ov += read_timer() - temp;
     }
-    cost_all = read_timer() - total;
+    cost_all = read_timer() - cost_all;
 
  	// this is for not quiesce
     double parallel_overhead = read_timer();
