@@ -5,7 +5,8 @@
 #include <pthread.h>
 #include <signal.h>
 #include <omp.h>
-#include <omp_interop.h>
+//Uncomment this if your implementation has a separated header 
+//#include <omp_interop.h>
 #include <sys/timeb.h>
 #include <unistd.h>
 
@@ -23,12 +24,18 @@
 int main(int argc, char * argv[]) {
 	int thr_num = 4;
 	if (argc >= 2) thr_num = (atoi(argv[1]));
-#pragma omp parallel num_threads(nthreads)
+#pragma omp parallel num_threads(thr_num)
     {
         int tid = omp_get_thread_num();
         if (omp_quiesce() == 0) {
-            printf("omp_quiesce() should be retur failure since we are calling it with a parallel region\n");
-        };
+            printf("Error: omp_quiesce() returns SUCCESS when calling it with a parallel region\n");
+        }
+        else
+        {
+            printf("Expected: omp_quiesce() returns FAILURE when calling it with a parallel region\n");
+        }
+
+
     }
 
     return 0;
