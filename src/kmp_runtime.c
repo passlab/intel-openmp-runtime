@@ -7618,6 +7618,10 @@ void static interop_kmp_omp_thread_launcher(int gtid) {
     th->start_routine(th->arg);
     th->join_counter = 1;
 
+    if (th->new_stack) {
+        /* use setjmp/longjmp pair to change back to the original stack */
+    }
+
     /* the free team will not free the original master thread, it will return the team and the thread back to the pool */
     kmp_team_t * team = kmp_thread->th.th_team;
     __kmp_free_team(kmp_thread->th.th_root, team, NULL);
