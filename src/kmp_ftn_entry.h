@@ -846,9 +846,9 @@ FTN_GET_PARTITION_PLACE_NUMS( int *place_nums ) {
 
 /** OpenMP Interoperability */
 void FTN_STDCALL
-FTN_SET_WAIT_POLICY(omp_wait_policy_t wait_policy)
+FTN_SET_WAIT_POLICY(omp_thread_state_t wait_policy)
 {
-    if (wait_policy == OMP_PASSIVE_WAIT) {
+    if (wait_policy == omp_wait_policy_PASSIVE) {
         // printf("wait policy active\n");
 
         // __kmp_stg_parse_wait_policy(NULL, NULL, NULL);
@@ -891,14 +891,14 @@ int FTN_STDCALL
 FTN_GET_WAIT_POLICY( void )
 {
     if ( __kmp_library == library_turnaround ) {
-        return OMP_ACTIVE_WAIT;
+        return omp_wait_policy_ACTIVE;
     } else {
-        return OMP_PASSIVE_WAIT;
+        return omp_wait_policy_PASSIVE;
     }
 }
 
 int FTN_STDCALL
-FTN_QUIESCE( void )
+FTN_QUIESCE( omp_thread_state_t quiesce_state )
 {
     //printf("runtime quiesce call\n");
     __kmp_internal_end_fini();
@@ -928,9 +928,9 @@ FTN_QUIESCE( void )
 }
 
 int FTN_STDCALL
-FTN_THREAD_CREATE( omp_thread_t * th, void *(*start_routine)(void *), void *arg, void * new_stack )
+FTN_THREAD_CREATE( omp_thread_t * th, int place, void *(*start_routine)(void *), void *arg, void * new_stack )
 {
-    return __kmp_omp_thread_create(th, start_routine, arg, new_stack);
+    return __kmp_omp_thread_create(th, place, start_routine, arg, new_stack);
 }
 
 void FTN_STDCALL
@@ -954,7 +954,7 @@ FTN_THREAD_JOIN( omp_thread_t * thread, void **value_ptr )
 }
 
 int FTN_STDCALL
-FTN_THREAD_ATTACH( void * new_stack, int * callback_flag )
+FTN_THREAD_ATTACH( omp_runtime_handle_t runtime, int place, void * new_stack, int * term_flag )
 {
     return 0;
 }

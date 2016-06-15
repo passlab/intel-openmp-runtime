@@ -201,13 +201,21 @@
     extern void   __KAI_KMPC_CONVENTION  kmp_set_warnings_off(void);
 
     /* interop API */
-    typedef enum omp_wait_policy_t {
-        OMP_ACTIVE_WAIT = 1,
-        OMP_PASSIVE_WAIT = 2,
-    } omp_wait_policy_t;
-    extern void   __KAI_KMPC_CONVENTION  omp_set_wait_policy(omp_wait_policy_t wait_policy);
-    extern int    __KAI_KMPC_CONVENTION  omp_get_wait_policy(void);
-    extern int    __KAI_KMPC_CONVENTION  omp_quiesce(void);
+    /*
+     * If a state is < ACTIVE (6), they are considered as ACTIVE
+     * If a state is < PASSIVE (7), they are considered as PASSIVE
+     */
+    typedef enum omp_thread_state {
+        omp_thread_state_RUNNING = 0,     /* doing useful work */
+        omp_thread_state_SPINNING = 1,    /* busy waiting (SPINNING) for work */
+        omp_thread_state_YIELD = 3,       /* yield the CPU */
+        omp_thread_state_SLEEP = 4,       /* sleeping */
+        omp_thread_state_KILLED = 5,      /* being killed */
+
+        omp_wait_policy_ACTIVE = omp_thread_state_SPINNING, /* ACTIVE is SPINNING */
+        omp_wait_policy_PASSIVE = omp_thread_state_YIELD,   /* PASSIVE is either YIELD or SLEEP */
+    } omp_thread_state_t;
+
     typedef struct omp_thread {
         void *(*start_routine)(void *);
         void *arg;
@@ -215,12 +223,24 @@
         volatile int join_counter;
         void * rtval;
     } omp_thread_t;
-    extern int    __KAI_KMPC_CONVENTION  omp_thread_create (omp_thread_t * th, void *(*start_routine)(void *), void *arg, void * new_stack);
+    typedef struct omp_task omp_task_t;
+    typedef struct omp_runtime_handle * omp_runtime_handle_t;
+
+    extern void   __KAI_KMPC_CONVENTION  omp_set_wait_policy(omp_thread_state_t wait_state);
+    extern int    __KAI_KMPC_CONVENTION  omp_get_wait_policy(void);
+    extern int    __KAI_KMPC_CONVENTION  omp_quiesce(omp_thread_state_t quiesce_state);
+
+    extern int    __KAI_KMPC_CONVENTION  omp_thread_create (omp_thread_t * th, int place, void *(*start_routine)(void *), void *arg, void * new_stack);
     extern void   __KAI_KMPC_CONVENTION  omp_thread_exit(void *value_ptr);
     extern int    __KAI_KMPC_CONVENTION  omp_thread_join(omp_thread_t * thread, void **value_ptr);
-    extern int    __KAI_KMPC_CONVENTION  omp_thread_attach(void * new_stack, int * callback_flag);
-    typedef struct omp_runtime_handle * omp_runtime_handle_t;
+    extern int    __KAI_KMPC_CONVENTION  omp_thread_attach(omp_runtime_handle_t runtime, int place, void * new_stack, int * term_flag);
+
+    extern omp_thread_t * __KAI_KMPC_CONVENTION omp_get_initial_thread();
     extern omp_runtime_handle_t    __KAI_KMPC_CONVENTION  omp_get_runtime_handle(void);
+    extern int    __KAI_KMPC_CONVENTION  omp_get_num_threads_runtime(omp_thread_state_t state);
+
+    void omp_task_create(omp_task_t * t, void *(*task_func)(void *), void * task_args, int (*task_test_func)(omp_task_t),
+                         int *intags, int num_intags, int * outtags, int num_outtags);
 
 #   undef __KAI_KMPC_CONVENTION
 

@@ -7627,7 +7627,7 @@ void static interop_kmp_omp_thread_launcher(int gtid) {
     __kmp_free_team(kmp_thread->th.th_root, team, NULL);
 }
 
-int __kmp_omp_thread_create( omp_thread_t * th, void *(*start_routine)(void *), void *arg, void * new_stack )
+int __kmp_omp_thread_create( omp_thread_t * th, int place, void *(*start_routine)(void *), void *arg, void * new_stack )
 {
     KA_TRACE( 20, ("__kmp_omp_thread_create entered\n") );
     th->start_routine = start_routine;

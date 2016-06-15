@@ -3640,10 +3640,16 @@ typedef enum omp_sched_t {
 } omp_sched_t;
 typedef void * kmp_affinity_mask_t;
 
-typedef enum omp_wait_policy_t {
-    OMP_ACTIVE_WAIT = 1,
-    OMP_PASSIVE_WAIT = 2,
-} omp_wait_policy_t;
+typedef enum omp_thread_state {
+    omp_thread_state_RUNNING = 0,     /* doing useful work */
+    omp_thread_state_SPINNING = 1,    /* busy waiting (SPINNING) for work */
+    omp_thread_state_YIELD = 3,       /* yield the CPU */
+    omp_thread_state_SLEEP = 4,       /* sleeping */
+    omp_thread_state_KILLED = 5,      /* being killed */
+
+    omp_wait_policy_ACTIVE = omp_thread_state_SPINNING, /* ACTIVE is SPINNING */
+    omp_wait_policy_PASSIVE = omp_thread_state_YIELD,   /* PASSIVE is either YIELD or SLEEP */
+} omp_thread_state_t;
 
 typedef struct omp_thread {
     void *(*start_routine)(void *);
@@ -3652,12 +3658,11 @@ typedef struct omp_thread {
     volatile int join_counter;
     void * rtval;
 } omp_thread_t;
+typedef struct omp_task omp_task_t;
+typedef struct omp_runtime_handle * omp_runtime_handle_t;
 
-typedef struct omp_runtime_handle {
-    int dummy;
-} * omp_runtime_handle_t;
+extern int __kmp_omp_thread_create( omp_thread_t * th, int place, void *(*start_routine)(void *), void *arg, void * new_stack );
 
-extern int __kmp_omp_thread_create( omp_thread_t * th, void *(*start_routine)(void *), void *arg, void * new_stack );
 #endif
 
 KMP_EXPORT void KMPC_CONVENTION ompc_set_max_active_levels(int);
